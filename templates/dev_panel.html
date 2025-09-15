@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Developer Panel - CronEditor</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #1a1a1a;
+            color: #e0e0e0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #2d2d2d;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            padding: 30px;
+        }
+
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #444;
+            padding-bottom: 20px;
+        }
+
+        h1 {
+            color: #00ff88;
+            font-size: 24px;
+        }
+
+        .nav-link {
+            background: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .nav-link:hover {
+            background: #0056b3;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .section-title {
+            color: #00ff88;
+            font-size: 18px;
+            margin-bottom: 15px;
+            border-left: 4px solid #00ff88;
+            padding-left: 10px;
+        }
+
+        .crontab-output {
+            background: #1e1e1e;
+            border: 1px solid #444;
+            border-radius: 4px;
+            padding: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            line-height: 1.4;
+            max-height: 500px;
+            overflow-y: auto;
+            color: #f0f0f0;
+        }
+
+        .refresh-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            margin-bottom: 15px;
+            transition: background-color 0.2s;
+        }
+
+        .refresh-btn:hover {
+            background: #1e7e34;
+        }
+
+        .info {
+            background: #3a3a3a;
+            border-left: 4px solid #17a2b8;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+        }
+
+        .info-title {
+            color: #17a2b8;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🛠️ Developer Panel</h1>
+            <a href="/" class="nav-link">← メインパネルに戻る</a>
+        </div>
+
+        <div class="info">
+            <div class="info-title">開発者パネルについて</div>
+            <p>このパネルは開発・デバッグ用です。crontab -l コマンドの生の出力を表示します。</p>
+        </div>
+
+        <div class="section">
+            <div class="section-title">Raw Crontab Output</div>
+            <button class="refresh-btn" onclick="location.reload()">🔄 更新</button>
+            <div class="crontab-output">{{ raw_crontab }}</div>
+        </div>
+    </div>
+
+    <script>
+        // Auto-refresh every 30 seconds if enabled
+        let autoRefresh = false;
+
+        document.addEventListener('keydown', function(e) {
+            // Ctrl+R for manual refresh
+            if (e.ctrlKey && e.key === 'r') {
+                e.preventDefault();
+                location.reload();
+            }
+            // Ctrl+A for auto-refresh toggle
+            if (e.ctrlKey && e.key === 'a') {
+                e.preventDefault();
+                autoRefresh = !autoRefresh;
+                if (autoRefresh) {
+                    console.log('Auto-refresh enabled (30s)');
+                    setInterval(() => location.reload(), 30000);
+                } else {
+                    console.log('Auto-refresh disabled');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

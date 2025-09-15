@@ -1,6 +1,7 @@
 from flask import Flask, render_template, request, jsonify
 import configparser
 import os
+import subprocess
 from src.cron_manager import CronManager
 
 app = Flask(__name__)
@@ -16,6 +17,19 @@ def load_config():
 def index():
     jobs = cron_manager.get_cron_jobs()
     return render_template('index.html', jobs=jobs)
+
+@app.route('/dev')
+def dev_panel():
+    try:
+        result = subprocess.run(['crontab', '-l'], capture_output=True, text=True)
+        if result.returncode == 0:
+            raw_crontab = result.stdout
+        else:
+            raw_crontab = f"Error: crontab -l returned code {result.returncode}\n{result.stderr}"
+    except Exception as e:
+        raw_crontab = f"Error executing crontab -l: {str(e)}"
+
+    return render_template('dev_panel.html', raw_crontab=raw_crontab)
 
 @app.route('/update_job', methods=['POST'])
 def update_job():
