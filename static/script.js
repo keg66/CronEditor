@@ -58,7 +58,7 @@ function saveJob(jobId) {
             showMessage('Cronジョブが正常に更新されました。', 'success');
             setTimeout(() => {
                 window.location.reload();
-            }, 1000);
+            }, 1500);
         } else {
             showMessage('エラー: ' + result.error, 'error');
         }

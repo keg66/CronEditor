@@ -20,20 +20,67 @@ class CronManager:
             job_index = 0
 
             for line_index, line in enumerate(self.all_lines):
-                if line.strip() and not line.startswith('#'):
-                    job = self._parse_cron_line(line, job_index, line_index)
-                    if job:
-                        jobs.append(job)
-                        job_index += 1
+                if line.strip():
+                    # Check if it's a cron job (active or disabled)
+                    if self._is_cron_job_line(line):
+                        job = self._parse_cron_line(line, job_index, line_index)
+                        if job:
+                            jobs.append(job)
+                            job_index += 1
 
             self.cron_jobs = jobs
-            print(f"Found {len(jobs)} cron jobs")
+            print(f"Found {len(jobs)} cron jobs (including disabled ones)")
             return jobs
         except Exception as e:
             print(f"Error reading crontab: {e}")
             return []
 
+    def _is_cron_job_line(self, line: str) -> bool:
+        """Check if a line is a cron job (active or disabled)"""
+        line = line.strip()
+
+        # Skip empty lines and comment-only lines (not disabled cron jobs)
+        if not line or line.startswith('# ') and not self._looks_like_disabled_cron(line):
+            return False
+
+        # Check for disabled cron job pattern: # minute hour day month weekday command
+        if line.startswith('#'):
+            return self._looks_like_disabled_cron(line)
+
+        # Check for active cron job pattern: minute hour day month weekday command
+        parts = line.split()
+        return len(parts) >= 6 and self._is_valid_cron_time_fields(parts[:5])
+
+    def _looks_like_disabled_cron(self, line: str) -> bool:
+        """Check if a commented line looks like a disabled cron job"""
+        # Remove the # and check if it looks like a cron job
+        uncommented = line[1:].strip()
+        if not uncommented:
+            return False
+
+        parts = uncommented.split()
+        return len(parts) >= 6 and self._is_valid_cron_time_fields(parts[:5])
+
+    def _is_valid_cron_time_fields(self, fields: List[str]) -> bool:
+        """Check if the first 5 fields look like valid cron time fields"""
+        if len(fields) != 5:
+            return False
+
+        for field in fields:
+            # Check if field contains valid cron characters
+            if not re.match(r'^[0-9*,/-]+$', field):
+                return False
+
+        return True
+
     def _parse_cron_line(self, line: str, job_id: int, line_index: int) -> Dict[str, Any]:
+        original_line = line
+        enabled = not line.strip().startswith('#')
+
+        # If it's a commented line, remove the comment to parse
+        if line.strip().startswith('#'):
+            line = line.strip()[1:].strip()
+
         parts = line.split()
         if len(parts) < 6:
             return None
@@ -47,8 +94,8 @@ class CronManager:
             'month': parts[3],
             'weekday': parts[4],
             'command': ' '.join(parts[5:]),
-            'enabled': True,
-            'original_line': line
+            'enabled': enabled,
+            'original_line': original_line
         }
 
     def update_cron_job(self, job_id: int, minute: str, hour: str, day: str, month: str, weekday: str, enabled: bool) -> bool:

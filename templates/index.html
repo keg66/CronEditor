@@ -16,7 +16,7 @@
         {% if jobs %}
         <div class="cron-jobs">
             {% for job in jobs %}
-            <div class="job-row" data-job-id="{{ job.id }}">
+            <div class="job-row{% if not job.enabled %} disabled{% endif %}" data-job-id="{{ job.id }}">
                 <div class="job-display">
                     <div class="job-time">
                         <span class="time-part">{{ job.minute }}</span>
@@ -28,7 +28,7 @@
                     <div class="job-command">{{ job.command }}</div>
                     <div class="job-status">
                         <input type="checkbox" {% if job.enabled %}checked{% endif %} disabled>
-                        <label>有効</label>
+                        <label>{% if job.enabled %}有効{% else %}無効{% endif %}</label>
                     </div>
                     <div class="job-actions">
                         <button class="edit-btn" onclick="editJob({{ job.id }})">編集</button>
