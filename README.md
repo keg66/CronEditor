@@ -15,6 +15,7 @@ Raspberry Pi上のcronジョブをWebブラウザ経由で簡単に管理・編�
 - Python 3.8以上
 - Linux環境（Raspberry Pi推奨）
 - crontabへの適切な権限
+- 任意のユーザー（pi、ubuntu、その他何でも対応）
 
 ## インストール
 

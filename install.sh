@@ -4,8 +4,13 @@
 
 echo "CronEditor をインストールします..."
 
-# 現在のディレクトリを取得
+# 現在のユーザーとディレクトリを取得
+CURRENT_USER=$(whoami)
 INSTALL_DIR=$(pwd)
+
+echo "インストール設定:"
+echo "  ユーザー: $CURRENT_USER"
+echo "  ディレクトリ: $INSTALL_DIR"
 
 # Python仮想環境の作成
 echo "Python仮想環境を作成しています..."
@@ -17,9 +22,13 @@ echo "依存関係をインストールしています..."
 pip install --upgrade pip
 pip install -e .
 
-# systemdサービスファイルのコピー（実際のパスに置き換え）
+# systemdサービスファイルの作成（テンプレート置換）
 echo "systemdサービスを設定しています..."
-sudo sed "s|/home/pi/CronEditor|${INSTALL_DIR}|g" croneditor.service > /tmp/croneditor.service
+sed -e "s|{{USER}}|${CURRENT_USER}|g" \
+    -e "s|{{INSTALL_DIR}}|${INSTALL_DIR}|g" \
+    croneditor.service > /tmp/croneditor.service
+
+# systemdサービスファイルをシステムにコピー
 sudo mv /tmp/croneditor.service /etc/systemd/system/
 
 # systemdサービスの有効化
