@@ -39,8 +39,8 @@ class CronManager:
         """Check if a line is a cron job (active or disabled)"""
         line = line.strip()
 
-        # Skip empty lines and comment-only lines (not disabled cron jobs)
-        if not line or line.startswith('# ') and not self._looks_like_disabled_cron(line):
+        # Skip empty lines
+        if not line:
             return False
 
         # Check for disabled cron job pattern: # minute hour day month weekday command
@@ -66,10 +66,24 @@ class CronManager:
         if len(fields) != 5:
             return False
 
-        for field in fields:
-            # Check if field contains valid cron characters
-            if not re.match(r'^[0-9*,/-]+$', field):
+        # Define patterns for each field type
+        cron_patterns = [
+            r'^(\*|[0-5]?[0-9](-[0-5]?[0-9])?(\,[0-5]?[0-9](-[0-5]?[0-9])?)*|\*/[0-9]+|[0-5]?[0-9](-[0-5]?[0-9])?/[0-9]+)$',  # minute (0-59)
+            r'^(\*|[01]?[0-9]|2[0-3]|[01]?[0-9]-[01]?[0-9]|2[0-3]-2[0-3]|\*|\*/[0-9]+|[0-2]?[0-9]/[0-9]+|\d+(,\d+)*)$',  # hour (0-23)
+            r'^(\*|[1-9]|[12][0-9]|3[01]|\*/[0-9]+|[1-9]-[1-3]?[0-9]|[1-9]/[0-9]+|\d+(,\d+)*)$',  # day (1-31)
+            r'^(\*|[1-9]|1[0-2]|\*/[0-9]+|[1-9]-1?[0-2]|[1-9]/[0-9]+|\d+(,\d+)*)$',  # month (1-12)
+            r'^(\*|[0-7]|(sun|mon|tue|wed|thu|fri|sat)(-(sun|mon|tue|wed|thu|fri|sat))?(,(sun|mon|tue|wed|thu|fri|sat)(-(sun|mon|tue|wed|thu|fri|sat))?)*|\*/[0-9]+|[0-7]/[0-9]+|\d+(,\d+)*)$'  # weekday (0-7 or names)
+        ]
+
+        for i, field in enumerate(fields):
+            # For simplicity, use a more relaxed but still restrictive pattern
+            if not re.match(r'^[0-9*,/-]+$|^[a-zA-Z,-]+$', field):
                 return False
+
+            # Additional check: field shouldn't be just letters without being weekday-like
+            if re.match(r'^[a-zA-Z]+$', field) and i != 4:  # Only weekday field (index 4) can be pure letters
+                if not re.match(r'^(sun|mon|tue|wed|thu|fri|sat)$', field.lower()):
+                    return False
 
         return True
 
