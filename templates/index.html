@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CronEditor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Cron Job Editor</h1>
+
+        {% if jobs %}
+        <div class="cron-jobs">
+            {% for job in jobs %}
+            <div class="job-row" data-job-id="{{ job.id }}">
+                <div class="job-display">
+                    <div class="job-time">
+                        <span class="time-part">{{ job.minute }}</span>
+                        <span class="time-part">{{ job.hour }}</span>
+                        <span class="time-part">{{ job.day }}</span>
+                        <span class="time-part">{{ job.month }}</span>
+                        <span class="time-part">{{ job.weekday }}</span>
+                    </div>
+                    <div class="job-command">{{ job.command }}</div>
+                    <div class="job-status">
+                        <input type="checkbox" {% if job.enabled %}checked{% endif %} disabled>
+                        <label>有効</label>
+                    </div>
+                    <div class="job-actions">
+                        <button class="edit-btn" onclick="editJob({{ job.id }})">編集</button>
+                    </div>
+                </div>
+
+                <div class="job-edit" style="display: none;">
+                    <div class="job-time-edit">
+                        <select class="time-select" data-field="minute">
+                            {% for i in range(60) %}
+                            <option value="{{ i }}" {% if job.minute == i|string %}selected{% endif %}>{{ "%02d"|format(i) }}</option>
+                            {% endfor %}
+                        </select>
+                        <select class="time-select" data-field="hour">
+                            {% for i in range(24) %}
+                            <option value="{{ i }}" {% if job.hour == i|string %}selected{% endif %}>{{ "%02d"|format(i) }}</option>
+                            {% endfor %}
+                        </select>
+                        <select class="time-select" data-field="day">
+                            <option value="*" {% if job.day == "*" %}selected{% endif %}>*</option>
+                            {% for i in range(1, 32) %}
+                            <option value="{{ i }}" {% if job.day == i|string %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                        <select class="time-select" data-field="month">
+                            <option value="*" {% if job.month == "*" %}selected{% endif %}>*</option>
+                            {% for i in range(1, 13) %}
+                            <option value="{{ i }}" {% if job.month == i|string %}selected{% endif %}>{{ i }}</option>
+                            {% endfor %}
+                        </select>
+                        <select class="time-select" data-field="weekday">
+                            <option value="*" {% if job.weekday == "*" %}selected{% endif %}>*</option>
+                            <option value="0" {% if job.weekday == "0" %}selected{% endif %}>日</option>
+                            <option value="1" {% if job.weekday == "1" %}selected{% endif %}>月</option>
+                            <option value="2" {% if job.weekday == "2" %}selected{% endif %}>火</option>
+                            <option value="3" {% if job.weekday == "3" %}selected{% endif %}>水</option>
+                            <option value="4" {% if job.weekday == "4" %}selected{% endif %}>木</option>
+                            <option value="5" {% if job.weekday == "5" %}selected{% endif %}>金</option>
+                            <option value="6" {% if job.weekday == "6" %}selected{% endif %}>土</option>
+                        </select>
+                    </div>
+                    <div class="job-command">{{ job.command }}</div>
+                    <div class="job-status-edit">
+                        <input type="checkbox" class="enabled-checkbox" {% if job.enabled %}checked{% endif %}>
+                        <label>有効</label>
+                    </div>
+                    <div class="job-actions-edit">
+                        <button class="save-btn" onclick="saveJob({{ job.id }})">保存</button>
+                        <button class="cancel-btn" onclick="cancelEdit({{ job.id }})">キャンセル</button>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p>Cronジョブが見つかりません。</p>
+        {% endif %}
+
+        <div id="message" class="message"></div>
+    </div>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+</body>
+</html>

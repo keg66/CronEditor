@@ -1,0 +1,13 @@
+[project]
+name = "croneditor"
+version = "0.1.0"
+description = "Web-based cron job editor for Raspberry Pi"
+dependencies = [
+    "Flask>=2.3.3",
+    "python-crontab>=3.0.0"
+]
+requires-python = ">=3.8"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
