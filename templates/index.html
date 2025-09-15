@@ -36,39 +36,93 @@
                 </div>
 
                 <div class="job-edit" style="display: none;">
-                    <div class="job-time-edit">
-                        <select class="time-select" data-field="minute">
-                            {% for i in range(60) %}
-                            <option value="{{ i }}" {% if job.minute == i|string %}selected{% endif %}>{{ "%02d"|format(i) }}</option>
-                            {% endfor %}
-                        </select>
-                        <select class="time-select" data-field="hour">
-                            {% for i in range(24) %}
-                            <option value="{{ i }}" {% if job.hour == i|string %}selected{% endif %}>{{ "%02d"|format(i) }}</option>
-                            {% endfor %}
-                        </select>
-                        <select class="time-select" data-field="day">
-                            <option value="*" {% if job.day == "*" %}selected{% endif %}>*</option>
-                            {% for i in range(1, 32) %}
-                            <option value="{{ i }}" {% if job.day == i|string %}selected{% endif %}>{{ i }}</option>
-                            {% endfor %}
-                        </select>
-                        <select class="time-select" data-field="month">
-                            <option value="*" {% if job.month == "*" %}selected{% endif %}>*</option>
-                            {% for i in range(1, 13) %}
-                            <option value="{{ i }}" {% if job.month == i|string %}selected{% endif %}>{{ i }}</option>
-                            {% endfor %}
-                        </select>
-                        <select class="time-select" data-field="weekday">
-                            <option value="*" {% if job.weekday == "*" %}selected{% endif %}>*</option>
-                            <option value="0" {% if job.weekday == "0" %}selected{% endif %}>日</option>
-                            <option value="1" {% if job.weekday == "1" %}selected{% endif %}>月</option>
-                            <option value="2" {% if job.weekday == "2" %}selected{% endif %}>火</option>
-                            <option value="3" {% if job.weekday == "3" %}selected{% endif %}>水</option>
-                            <option value="4" {% if job.weekday == "4" %}selected{% endif %}>木</option>
-                            <option value="5" {% if job.weekday == "5" %}selected{% endif %}>金</option>
-                            <option value="6" {% if job.weekday == "6" %}selected{% endif %}>土</option>
-                        </select>
+                    <div class="mode-toggle">
+                        <button type="button" class="toggle-btn" onclick="toggleEditMode({{ job.id }})">
+                            <span class="toggle-text">高度な設定</span>
+                        </button>
+                    </div>
+
+                    <!-- Simple Mode (Dropdowns) -->
+                    <div class="job-time-edit simple-mode">
+                        <div class="time-field-simple">
+                            <label>分</label>
+                            <select class="time-select" data-field="minute">
+                                <option value="*" {% if job.minute == "*" %}selected{% endif %}>*</option>
+                                {% for i in range(60) %}
+                                <option value="{{ i }}" {% if job.minute == i|string %}selected{% endif %}>{{ "%02d"|format(i) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="time-field-simple">
+                            <label>時</label>
+                            <select class="time-select" data-field="hour">
+                                <option value="*" {% if job.hour == "*" %}selected{% endif %}>*</option>
+                                {% for i in range(24) %}
+                                <option value="{{ i }}" {% if job.hour == i|string %}selected{% endif %}>{{ "%02d"|format(i) }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="time-field-simple">
+                            <label>日</label>
+                            <select class="time-select" data-field="day">
+                                <option value="*" {% if job.day == "*" %}selected{% endif %}>*</option>
+                                {% for i in range(1, 32) %}
+                                <option value="{{ i }}" {% if job.day == i|string %}selected{% endif %}>{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="time-field-simple">
+                            <label>月</label>
+                            <select class="time-select" data-field="month">
+                                <option value="*" {% if job.month == "*" %}selected{% endif %}>*</option>
+                                {% for i in range(1, 13) %}
+                                <option value="{{ i }}" {% if job.month == i|string %}selected{% endif %}>{{ i }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="time-field-simple">
+                            <label>曜日</label>
+                            <select class="time-select" data-field="weekday">
+                                <option value="*" {% if job.weekday == "*" %}selected{% endif %}>*</option>
+                                <option value="0" {% if job.weekday == "0" %}selected{% endif %}>日</option>
+                                <option value="1" {% if job.weekday == "1" %}selected{% endif %}>月</option>
+                                <option value="2" {% if job.weekday == "2" %}selected{% endif %}>火</option>
+                                <option value="3" {% if job.weekday == "3" %}selected{% endif %}>水</option>
+                                <option value="4" {% if job.weekday == "4" %}selected{% endif %}>木</option>
+                                <option value="5" {% if job.weekday == "5" %}selected{% endif %}>金</option>
+                                <option value="6" {% if job.weekday == "6" %}selected{% endif %}>土</option>
+                                <option value="7" {% if job.weekday == "7" %}selected{% endif %}>日</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Advanced Mode (Text Inputs) -->
+                    <div class="job-time-edit advanced-mode" style="display: none;">
+                        <div class="time-field">
+                            <label>分</label>
+                            <input type="text" class="time-input" data-field="minute" value="{{ job.minute }}"
+                                   placeholder="例: *, 0, */5, 1-30, 0,15,30,45" title="分 (0-59, *, */n, x-y, x,y,z)">
+                        </div>
+                        <div class="time-field">
+                            <label>時</label>
+                            <input type="text" class="time-input" data-field="hour" value="{{ job.hour }}"
+                                   placeholder="例: *, 9, */2, 9-17, 6,12,18" title="時 (0-23, *, */n, x-y, x,y,z)">
+                        </div>
+                        <div class="time-field">
+                            <label>日</label>
+                            <input type="text" class="time-input" data-field="day" value="{{ job.day }}"
+                                   placeholder="例: *, 1, */7, 1-15, 1,15" title="日 (1-31, *, */n, x-y, x,y,z)">
+                        </div>
+                        <div class="time-field">
+                            <label>月</label>
+                            <input type="text" class="time-input" data-field="month" value="{{ job.month }}"
+                                   placeholder="例: *, 1, */3, 1-6, 3,6,9,12" title="月 (1-12, *, */n, x-y, x,y,z)">
+                        </div>
+                        <div class="time-field">
+                            <label>曜日</label>
+                            <input type="text" class="time-input" data-field="weekday" value="{{ job.weekday }}"
+                                   placeholder="例: *, 0, mon-fri, sat,sun" title="曜日 (0-7, *, mon-sun, x,y,z)">
+                        </div>
                     </div>
                     <div class="job-command">{{ job.command }}</div>
                     <div class="job-status-edit">

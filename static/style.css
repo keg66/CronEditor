@@ -158,9 +158,91 @@ button {
     background: #545b62;
 }
 
-.job-time-edit {
+.mode-toggle {
+    text-align: center;
+    margin-bottom: 15px;
+}
+
+.toggle-btn {
+    background: #6c757d;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    transition: background-color 0.2s;
+}
+
+.toggle-btn:hover {
+    background: #545b62;
+}
+
+.toggle-btn.active {
+    background: #007bff;
+}
+
+.toggle-btn.active:hover {
+    background: #0056b3;
+}
+
+.job-time-edit.simple-mode {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+
+.job-time-edit.advanced-mode {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+}
+
+.time-field-simple {
     display: flex;
+    flex-direction: column;
     gap: 5px;
+}
+
+.time-field-simple label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #555;
+    text-align: center;
+}
+
+.time-field {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.time-field label {
+    font-size: 12px;
+    font-weight: bold;
+    color: #555;
+    text-align: center;
+}
+
+.time-input {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 13px;
+    text-align: center;
+    background: white;
+    transition: border-color 0.2s;
+}
+
+.time-input:focus {
+    border-color: #007bff;
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.time-input:invalid {
+    border-color: #dc3545;
 }
 
 .time-select {
