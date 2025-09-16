@@ -20,7 +20,7 @@ source .venv/bin/activate
 # 依存関係のインストール
 echo "依存関係をインストールしています..."
 pip install --upgrade pip
-pip install -e .
+pip install flask
 
 # systemdサービスファイルの作成（テンプレート置換）
 echo "systemdサービスを設定しています..."
