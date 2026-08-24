@@ -77,11 +77,28 @@ h1 {
     color: #666;
 }
 
-.job-display, .job-edit {
+.job-display {
     display: grid;
     grid-template-columns: 200px 1fr 100px 100px;
     gap: 20px;
     align-items: center;
+}
+
+/* 編集フォームは表示用の4列レイアウトを共有しない。
+   5つの子要素を4列に置くと暗黙の5列目が作られ、横にはみ出してしまう。 */
+.job-edit {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 16px;
+    align-items: center;
+    min-width: 0;
+}
+
+.job-edit .mode-toggle,
+.job-edit .job-time-edit,
+.job-edit .job-command {
+    grid-column: 1 / -1;
+    min-width: 0;
 }
 
 .job-time {
@@ -188,13 +205,13 @@ button {
 
 .job-time-edit.simple-mode {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 72px), 1fr));
     gap: 10px;
 }
 
 .job-time-edit.advanced-mode {
     display: grid;
-    grid-template-columns: repeat(5, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 140px), 1fr));
     gap: 10px;
 }
 
@@ -225,6 +242,8 @@ button {
 }
 
 .time-input {
+    width: 100%;
+    min-width: 0;
     padding: 8px;
     border: 1px solid #ddd;
     border-radius: 4px;
@@ -246,6 +265,7 @@ button {
 }
 
 .time-select {
+    width: 100%;
     padding: 5px;
     border: 1px solid #ddd;
     border-radius: 3px;
@@ -413,12 +433,40 @@ button {
 }
 
 @media (max-width: 768px) {
-    .job-display, .job-edit {
+    body {
+        padding: 12px;
+    }
+
+    .container {
+        padding: 20px;
+    }
+
+    .job-display {
         grid-template-columns: 1fr;
         gap: 10px;
     }
 
+    .job-edit {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+
+    .job-edit .mode-toggle,
+    .job-edit .job-time-edit,
+    .job-edit .job-command {
+        grid-column: auto;
+    }
+
     .job-time, .job-time-edit {
+        justify-content: center;
+    }
+
+    .job-time-edit.simple-mode,
+    .job-time-edit.advanced-mode {
+        grid-template-columns: repeat(auto-fit, minmax(min(100%, 120px), 1fr));
+    }
+
+    .job-status-edit {
         justify-content: center;
     }
 
