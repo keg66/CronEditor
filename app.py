@@ -43,6 +43,10 @@ def update_job():
         weekday = data.get('weekday')
         enabled = data.get('enabled', True)
 
+        errors = cron_manager.validate_time_fields(minute, hour, day, month, weekday)
+        if errors:
+            return jsonify({'success': False, 'error': '入力内容を確認してください。', 'field_errors': errors}), 400
+
         success = cron_manager.update_cron_job(
             job_id, minute, hour, day, month, weekday, enabled
         )

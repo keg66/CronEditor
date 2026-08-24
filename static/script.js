@@ -1,171 +1,47 @@
 let currentEditingJob = null;
+const FIELDS = { minute: {label:'分',min:0,max:59}, hour:{label:'時',min:0,max:23}, day:{label:'日',min:1,max:31}, month:{label:'月',min:1,max:12,names:['1月','2月','3月','4月','5月','6月','7月','8月','9月','10月','11月','12月']}, weekday:{label:'曜日',min:0,max:7,names:['日','月','火','水','木','金','土','日']} };
 
-function editJob(jobId) {
-    if (currentEditingJob !== null && currentEditingJob !== jobId) {
-        cancelEdit(currentEditingJob);
-    }
+function editJob(id) { if (currentEditingJob !== null && currentEditingJob !== id) cancelEdit(currentEditingJob); const row=document.querySelector(`[data-job-id="${id}"]`); row.querySelector('.job-display').style.display='none'; row.querySelector('.job-edit').style.display='grid'; initialiseBuilder(row); currentEditingJob=id; }
+function cancelEdit(id) { const row=document.querySelector(`[data-job-id="${id}"]`); row.querySelector('.job-display').style.display='grid'; row.querySelector('.job-edit').style.display='none'; currentEditingJob=null; }
 
-    const jobRow = document.querySelector(`[data-job-id="${jobId}"]`);
-    const displayDiv = jobRow.querySelector('.job-display');
-    const editDiv = jobRow.querySelector('.job-edit');
-
-    displayDiv.style.display = 'none';
-    editDiv.style.display = 'grid';
-
-    // Auto-detect if advanced mode is needed
-    autoDetectEditMode(jobId);
-
-    currentEditingJob = jobId;
+function initialiseBuilder(row) {
+  const b=row.querySelector('.schedule-builder'); if (b.dataset.initialised) return; b.dataset.initialised='true';
+  b._state=Object.fromEntries(Object.keys(FIELDS).map(key=>[key,parseExpression(b.dataset[key],key)]));
+  if (b.dataset.supported !== 'true') { b.innerHTML='<div class="unsupported-notice">このジョブには式ビルダーで扱えない記法が含まれています。元の式は変更されません。<button type="button" class="replace-expression">この設定に置き換えて編集</button></div>'; b.querySelector('button').addEventListener('click',()=>{Object.keys(FIELDS).forEach(k=>b._state[k]=initialState(k));b.dataset.supported='true';renderBuilder(b);}); return; }
+  renderBuilder(b);
 }
-
-function autoDetectEditMode(jobId) {
-    const jobRow = document.querySelector(`[data-job-id="${jobId}"]`);
-    const timeValues = [
-        jobRow.querySelector('.job-display .time-part:nth-child(1)').textContent, // minute
-        jobRow.querySelector('.job-display .time-part:nth-child(2)').textContent, // hour
-        jobRow.querySelector('.job-display .time-part:nth-child(3)').textContent, // day
-        jobRow.querySelector('.job-display .time-part:nth-child(4)').textContent, // month
-        jobRow.querySelector('.job-display .time-part:nth-child(5)').textContent  // weekday
-    ];
-
-    // Check if any value requires advanced mode
-    const needsAdvancedMode = timeValues.some(value => {
-        return value.includes('/') || value.includes('-') || value.includes(',') ||
-               value.includes('mon') || value.includes('tue') || value.includes('wed') ||
-               value.includes('thu') || value.includes('fri') || value.includes('sat') || value.includes('sun');
-    });
-
-    if (needsAdvancedMode) {
-        showAdvancedMode(jobId);
-    } else {
-        showSimpleMode(jobId);
-    }
+function initialState(key) { const s=FIELDS[key]; return {mode:'any',values:[],start:s.min,end:s.max,step:1,full:true,multi:false}; }
+function parseExpression(value,key) {
+  const s=FIELDS[key], word={sun:0,mon:1,tue:2,wed:3,thu:4,fri:5,sat:6}, val=x=>word[x] ?? Number(x), input=value.toLowerCase();
+  if (input==='*') return initialState(key);
+  const step=input.match(/^(.+)\/(\d+)$/); if(step && (step[1]==='*'||/^\w+-\w+$/.test(step[1]))) { const r=step[1]==='*'?[s.min,s.max]:step[1].split('-').map(val); return {mode:'step',values:[],start:r[0],end:r[1],step:Number(step[2]),full:step[1]==='*'}; }
+  if (/^\w+-\w+$/.test(input)) { const [start,end]=input.split('-').map(val); return {mode:'range',values:[],start,end,step:1,full:false}; }
+  const values=input.split(',').flatMap(part=>{if(/^\w+-\w+$/.test(part)){const [start,end]=part.split('-').map(val);return Array.from({length:end-start+1},(_,i)=>start+i);}return [val(part)];});
+  return {mode:'values',values,start:s.min,end:s.max,step:1,full:false,multi:values.length > 1};
 }
-
-function toggleEditMode(jobId) {
-    const jobRow = document.querySelector(`[data-job-id="${jobId}"]`);
-    const simpleMode = jobRow.querySelector('.simple-mode');
-    const advancedMode = jobRow.querySelector('.advanced-mode');
-    const toggleBtn = jobRow.querySelector('.toggle-btn');
-    const toggleText = toggleBtn.querySelector('.toggle-text');
-
-    if (simpleMode.style.display !== 'none') {
-        showAdvancedMode(jobId);
-    } else {
-        showSimpleMode(jobId);
-    }
+function displayValue(key, value) { const s=FIELDS[key]; return s.names ? s.names[value-s.min] : String(value).padStart(['minute','hour'].includes(key)?2:1,'0'); }
+function optionList(key,selected,prop) { const s=FIELDS[key]; return `<select data-builder-field="${key}" data-property="${prop}">${Array.from({length:s.max-s.min+1},(_,i)=>{const v=i+s.min;return `<option value="${v}" ${v===selected?'selected':''}>${s.names?s.names[i]:v}</option>`;}).join('')}</select>`; }
+function fieldEditor(key,state) {
+  const s=FIELDS[key], modes=[['any','任意'],['values','指定'],['range','範囲'],['step','間隔']]; let controls='';
+  if(state.mode==='values') {
+    const selected=state.values[0] ?? s.min;
+    controls=state.multi
+      ? `<div class="value-grid">${Array.from({length:s.max-s.min+1},(_,i)=>{const v=i+s.min;return `<label><input type="checkbox" data-builder-field="${key}" data-property="values" value="${v}" ${state.values.includes(v)?'checked':''}>${displayValue(key,v)}</label>`;}).join('')}</div><button type="button" class="selection-mode" data-action="single" data-field="${key}">1つだけ指定</button>`
+      : `<select class="drum-select" data-builder-field="${key}" data-property="value" aria-label="${s.label}を選択">${Array.from({length:s.max-s.min+1},(_,i)=>{const v=i+s.min;return `<option value="${v}" ${v===selected?'selected':''}>${displayValue(key,v)}</option>`;}).join('')}</select><button type="button" class="selection-mode" data-action="multi" data-field="${key}">複数指定</button>`;
+  }
+  if(state.mode==='range') controls=`<div class="range-controls">${optionList(key,state.start,'start')}〜${optionList(key,state.end,'end')}</div>`;
+  if(state.mode==='step') controls=`<div class="range-controls"><label><input type="checkbox" data-builder-field="${key}" data-property="full" ${state.full?'checked':''}>全範囲</label>${state.full?'':`${optionList(key,state.start,'start')}〜${optionList(key,state.end,'end')}`}<label>N <input type="number" min="1" max="${s.max-s.min+1}" value="${state.step}" data-builder-field="${key}" data-property="step"></label></div>`;
+  return `<section class="builder-field"><h3>${s.label}</h3><select data-builder-field="${key}" data-property="mode">${modes.map(([v,l])=>`<option value="${v}" ${state.mode===v?'selected':''}>${l}</option>`).join('')}</select>${controls}</section>`;
 }
-
-function showSimpleMode(jobId) {
-    const jobRow = document.querySelector(`[data-job-id="${jobId}"]`);
-    const simpleMode = jobRow.querySelector('.simple-mode');
-    const advancedMode = jobRow.querySelector('.advanced-mode');
-    const toggleBtn = jobRow.querySelector('.toggle-btn');
-    const toggleText = toggleBtn.querySelector('.toggle-text');
-
-    simpleMode.style.display = 'grid';
-    advancedMode.style.display = 'none';
-    toggleBtn.classList.remove('active');
-    toggleText.textContent = '高度な設定';
+function renderBuilder(b) {
+ b.innerHTML=`<div class="schedule-presets"><span>プリセット</span><button data-preset="minute">毎分</button><button data-preset="hour">毎時</button><button data-preset="day">毎日</button><button data-preset="weekday">平日</button><button data-preset="weekend">週末</button><button data-preset="monthStart">月初</button></div><div class="builder-fields">${Object.keys(FIELDS).map(k=>fieldEditor(k,b._state[k])).join('')}</div><div class="schedule-preview"><span>cron</span><code>${expression(b)}</code><p>${summary(b)}</p></div>`;
+ b.querySelectorAll('[data-preset]').forEach(x=>x.addEventListener('click',()=>applyPreset(b,x.dataset.preset))); b.querySelectorAll('[data-builder-field]').forEach(x=>x.addEventListener('change',e=>updateState(b,e))); b.querySelectorAll('[data-action]').forEach(x=>x.addEventListener('click',()=>{const st=b._state[x.dataset.field];st.multi=x.dataset.action==='multi';if(!st.multi)st.values=[st.values[0] ?? FIELDS[x.dataset.field].min];renderBuilder(b);}));
 }
-
-function showAdvancedMode(jobId) {
-    const jobRow = document.querySelector(`[data-job-id="${jobId}"]`);
-    const simpleMode = jobRow.querySelector('.simple-mode');
-    const advancedMode = jobRow.querySelector('.advanced-mode');
-    const toggleBtn = jobRow.querySelector('.toggle-btn');
-    const toggleText = toggleBtn.querySelector('.toggle-text');
-
-    simpleMode.style.display = 'none';
-    advancedMode.style.display = 'grid';
-    toggleBtn.classList.add('active');
-    toggleText.textContent = '基本設定';
-}
-
-function cancelEdit(jobId) {
-    const jobRow = document.querySelector(`[data-job-id="${jobId}"]`);
-    const displayDiv = jobRow.querySelector('.job-display');
-    const editDiv = jobRow.querySelector('.job-edit');
-
-    displayDiv.style.display = 'grid';
-    editDiv.style.display = 'none';
-    currentEditingJob = null;
-}
-
-function saveJob(jobId) {
-    const jobRow = document.querySelector(`[data-job-id="${jobId}"]`);
-    const editDiv = jobRow.querySelector('.job-edit');
-    const simpleMode = jobRow.querySelector('.simple-mode');
-    const advancedMode = jobRow.querySelector('.advanced-mode');
-
-    let minute, hour, day, month, weekday;
-
-    // Get values from the currently active mode
-    if (simpleMode.style.display !== 'none') {
-        // Simple mode - get from dropdowns
-        minute = simpleMode.querySelector('[data-field="minute"]').value;
-        hour = simpleMode.querySelector('[data-field="hour"]').value;
-        day = simpleMode.querySelector('[data-field="day"]').value;
-        month = simpleMode.querySelector('[data-field="month"]').value;
-        weekday = simpleMode.querySelector('[data-field="weekday"]').value;
-    } else {
-        // Advanced mode - get from text inputs
-        minute = advancedMode.querySelector('[data-field="minute"]').value.trim();
-        hour = advancedMode.querySelector('[data-field="hour"]').value.trim();
-        day = advancedMode.querySelector('[data-field="day"]').value.trim();
-        month = advancedMode.querySelector('[data-field="month"]').value.trim();
-        weekday = advancedMode.querySelector('[data-field="weekday"]').value.trim();
-
-        // Basic validation for advanced mode
-        if (!minute || !hour || !day || !month || !weekday) {
-            showMessage('全ての時間フィールドを入力してください。', 'error');
-            return;
-        }
-    }
-
-    const enabled = editDiv.querySelector('.enabled-checkbox').checked;
-
-    const data = {
-        job_id: jobId,
-        minute: minute,
-        hour: hour,
-        day: day,
-        month: month,
-        weekday: weekday,
-        enabled: enabled
-    };
-
-    fetch('/update_job', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        if (result.success) {
-            showMessage('Cronジョブが正常に更新されました。', 'success');
-            setTimeout(() => {
-                window.location.reload();
-            }, 1500);
-        } else {
-            showMessage('エラー: ' + result.error, 'error');
-        }
-    })
-    .catch(error => {
-        showMessage('通信エラーが発生しました。', 'error');
-        console.error('Error:', error);
-    });
-}
-
-function showMessage(text, type) {
-    const messageDiv = document.getElementById('message');
-    messageDiv.textContent = text;
-    messageDiv.className = `message ${type}`;
-    messageDiv.style.display = 'block';
-
-    setTimeout(() => {
-        messageDiv.style.display = 'none';
-    }, 5000);
-}
+function updateState(b,event) { const x=event.currentTarget, key=x.dataset.builderField, st=b._state[key], prop=x.dataset.property; if(prop==='values') st.values=[...b.querySelectorAll(`[data-builder-field="${key}"][data-property="values"]:checked`)].map(y=>Number(y.value)); else if(prop==='value') st.values=[Number(x.value)]; else if(prop==='full') st.full=x.checked; else if(prop==='mode'){st.mode=x.value;if(st.mode==='values'&&!st.values.length)st.values=[FIELDS[key].min];} else st[prop]=Number(x.value); renderBuilder(b); }
+function expressionFor(st) { if(st.mode==='any')return '*';if(st.mode==='values')return st.values.sort((a,b)=>a-b).join(',');if(st.mode==='range')return `${st.start}-${st.end}`;return `${st.full?'*':`${st.start}-${st.end}`}/${st.step}`; }
+function expression(b) { return Object.keys(FIELDS).map(k=>expressionFor(b._state[k])).join(' '); }
+function weekdayLabel(expression) { const names=['日','月','火','水','木','金','土','日']; return expression.split(',').map(part=>{const [start,end]=part.split('-').map(Number);if(Number.isNaN(start))return part;return end === undefined ? names[start] : `${names[start]}〜${names[end]}`;}).join('、'); }
+function summary(b) { const e=Object.fromEntries(Object.keys(FIELDS).map(k=>[k,expressionFor(b._state[k])])); const numericMinute=/^\d+$/.test(e.minute), numericHour=/^\d+$/.test(e.hour); let time; if(e.hour==='*'&&e.minute==='*') time='毎分'; else if(e.hour==='*') time=`${e.minute}分`; else if(e.minute==='*') time=`${e.hour}時`; else if(numericHour&&numericMinute) time=`${e.hour}:${String(e.minute).padStart(2,'0')}`; else time=`${e.hour}時${e.minute}分`; const prefix=e.weekday==='*'?'':`${weekdayLabel(e.weekday)}の`; const note=e.day!=='*'&&e.weekday!=='*'?'。日と曜日を同時指定したcronの実行規則に従います。':''; return `${prefix}${time}に実行${note}`; }
+function applyPreset(b,p) { Object.keys(FIELDS).forEach(k=>b._state[k]=initialState(k)); if(p==='hour') b._state.minute={...b._state.minute,mode:'values',values:[0]}; if(['day','weekday','weekend','monthStart'].includes(p)){b._state.minute={...b._state.minute,mode:'values',values:[0]};b._state.hour={...b._state.hour,mode:'values',values:[p==='weekday'||p==='weekend'?9:0]};} if(p==='weekday'||p==='weekend')b._state.weekday={...b._state.weekday,mode:'values',values:p==='weekday'?[1,2,3,4,5]:[0,6]};if(p==='monthStart')b._state.day={...b._state.day,mode:'values',values:[1]};renderBuilder(b); }
+function saveJob(id) { const row=document.querySelector(`[data-job-id="${id}"]`),b=row.querySelector('.schedule-builder'); if(b.dataset.supported!=='true')return showMessage('対応外の式は置き換えを選ぶまで保存できません。','error'); const data={job_id:id,enabled:row.querySelector('.enabled-checkbox').checked};Object.keys(FIELDS).forEach(k=>data[k]=expressionFor(b._state[k])); fetch('/update_job',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(data)}).then(async r=>({ok:r.ok,json:await r.json()})).then(({ok,json})=>{if(ok&&json.success){showMessage('Cronジョブを更新しました。','success');setTimeout(()=>window.location.reload(),800);}else showMessage(json.error||'入力内容を確認してください。','error');}).catch(()=>showMessage('通信エラーが発生しました。','error')); }
+function showMessage(text,type) { const el=document.getElementById('message');el.textContent=text;el.className=`message ${type}`;el.style.display='block';setTimeout(()=>el.style.display='none',5000); }
